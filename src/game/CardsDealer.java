@@ -47,7 +47,7 @@ public class CardsDealer {
         return cardsDealt;
     }
 
-    public Card getManilha(Deck deck, int[] cardsDealt) {
+    public Card getVira(Deck deck, int[] cardsDealt) {
         int cardIndex;
         boolean isUnique;
         do {

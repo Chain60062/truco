@@ -3,7 +3,6 @@ package game;
 public class Card {
     private Suit suit;
     private Rank rank;
-    private boolean isManilha;
 
     public Card(Rank rank, Suit suit) {
         this.rank = rank;
@@ -15,15 +14,19 @@ public class Card {
         this.suit = suit;
     }
 
-    public boolean isStrongerThan(Card other, Card manilha) {
-        Rank nextManilhaRank = manilha.getNextRank();
-        nextManilhaRank.setForce(nextManilhaRank.getStrongestForce() + 1);
+    public boolean isStrongerThan(Card other, Card vira) {
+        Rank manilha = vira.getNextRank();
 
-        if (this.rank.getForce() == nextManilhaRank.getForce()) {
-            // se os numeros forem iguais, o naipe decide, comparando pela posicao no enum.
+        if (this.getRank().equals(manilha)) {
+            this.rank.setForce(manilha.getStrongestForce() + 1);
+        } else if (other.getRank().equals(manilha)) {
+            other.rank.setForce(manilha.getStrongestForce() + 1);
+        }
+
+        if (this.rank.getForce() == other.rank.getForce()) {
             return this.suit.ordinal() > other.suit.ordinal();
         }
-        return this.rank.getForce() > nextManilhaRank.getForce();
+        return this.rank.getForce() > other.rank.getForce();
     }
 
     public Suit getSuit() {

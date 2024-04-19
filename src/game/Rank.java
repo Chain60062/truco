@@ -17,7 +17,6 @@ public enum Rank {
     TRES(9);
 
     private int force;
-    private boolean isManilha;
 
     private static final Map<Integer, Rank> BY_FORCE = new HashMap<>();
 
@@ -29,7 +28,6 @@ public enum Rank {
 
     Rank(int force) {
         this.force = force;
-        this.isManilha = false;
     }
 
     public static Rank getRankByForce(int force) {
@@ -44,14 +42,7 @@ public enum Rank {
         this.force = force;
     }
 
-    public boolean isManilha() {
-        return isManilha;
-    }
-    public int getStrongestForce(){
+    public int getStrongestForce() {
         return Collections.max(BY_FORCE.entrySet(), Map.Entry.comparingByValue()).getKey();
-    }
-
-    public void setManilha(boolean isManilha) {
-        this.isManilha = isManilha;
     }
 }

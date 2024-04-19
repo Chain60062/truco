@@ -11,46 +11,51 @@ public class Game {
     private Deck deck = new Deck();
     private static final CardsDealer cardsDealer = new CardsDealer();
     private static final Scanner scan = new Scanner(System.in);
-    private Card manilha;
+    private Card vira;
     private Card lastThrownCard;
     private Player currentPlayer;
     private Player lastPlayer;
-    private Player lastTrucoPlayer;
-    private boolean skipTurn;
     private boolean isTrucado;
+    private Player lastTrucoPlayer;
+    private boolean wasTrucoAccepted;
+    private boolean skipTurn;
     private boolean leaveOptionsMenu;
-    private boolean restartGame;
-    private boolean continueGame;
+    private boolean endRound;
+    private boolean endGame;
     private int roundPoints;
 
     public Game() {
         isTrucado = false;
-        restartGame = false;
-        continueGame = true;
+        endRound = false;
+        endGame = false;
+        wasTrucoAccepted = false;
         roundPoints = 1;
     }
 
     public void newGame(List<Player> players) throws InterruptedException {
         out.println("--------------- Bem vindo ao Truco ----------------");
-        while (continueGame) {
+        int playerIndex = 0, option = 0, max = 0;
+        while (!endGame) {
             if (players.isEmpty())
                 throw new RuntimeException("Nenhum jogador especificado.");
 
-            if (restartGame)
-                restartGameStats();
+            if (endRound)
+                resetGameStats();
             // adicionar players do parametro para players interno
             this.players = players;
-            // entregar cartas e gerar manilha
+            // entregar cartas e virar carta que define a manilha
             int[] cardsDealt = cardsDealer.dealCards(deck, players);
-            manilha = cardsDealer.getManilha(deck, cardsDealt);
+            vira = cardsDealer.getVira(deck, cardsDealt);
 
-            int playerIndex = 0, option = 0, max = players.size();
+            playerIndex = 0;
+            option = 0;
+            max = players.size();
 
-            out.printf("Manilha da rodada é: %s.\n", manilha);
-            out.printf("Todas as cartas de valor: %s são as mais fortes.\n", manilha.getNextRank());
-            out.printf("A ordem de grandeza dos naipes é: Ouros < Espadas < Copas < Paus.\n", manilha);
+            out.printf("Carta virada da rodada é: %s.\n", vira);
+            out.printf("Todas as cartas de valor: %s são as mais fortes.\n", vira.getNextRank());
+            out.printf("A ordem de grandeza dos naipes é: Ouros < Espadas < Copas < Paus.\n", vira);
 
-            while (!restartGame) {
+            while (!endRound) {
                 if (skipTurn) {
                     skipTurn = false;
                     continue;
@@ -60,18 +65,20 @@ public class Game {
                 }
                 currentPlayer = players.get(playerIndex);
 
-                out.println("--------------------------------------");
-                out.println("Vez do jogador " + currentPlayer);
-                out.println("--------------------------------------");
-                printHand(currentPlayer.getHand());
-
+                out.println("----------------------------------");
+                out.println("Vez de " + currentPlayer);
+                out.println("----------------------------------");
+                
+                if (wasTrucoAccepted) {
+                    trucoWasAccepted();
+                }
                 while (!leaveOptionsMenu) {
                     if (isTrucado) {
                         if (roundPoints >= 12)
                             printOptionsFinal();
                         else
                             printOptionsTrucado(roundPoints);
-                    }else{
+                    } else {
                         printOptions();
                     }
 
@@ -89,7 +96,7 @@ public class Game {
 
                 for (var player : players) {
                     if (player.getScore() >= 12) {
-                        continueGame = false;
+                        endGame = true;
                     }
                 }
 
@@ -98,12 +105,12 @@ public class Game {
         }
     }
 
-    public void printHand(List<Card> hand) {
-        out.println("------------------- Sua Mão ------------------");
+    public void showHand(List<Card> hand) {
+        out.println("------------ Sua Mão -------------");
         for (Card card : hand) {
-            out.println(card);
+            out.println("- " + card);
         }
-        out.println("----------------------------------------------");
+        out.println("----------------------------------");
     }
 
     public void printOptions() {
@@ -131,17 +138,17 @@ public class Game {
     public void promptOptions(int option) {
         switch (option) {
             case 1:
-                printHand(currentPlayer.getHand());
+                showHand(currentPlayer.getHand());
                 break;
             case 2:
                 throwCard();
                 break;
             case 3:
-                trucoOption();
+                trucar();
                 break;
             case 0:
                 leaveOptionsMenu = true;
-                continueGame = false;
+                endGame = true;
                 break;
             default:
                 break;
@@ -151,19 +158,20 @@ public class Game {
     public void promptOptionsTrucado(int option) {
         switch (option) {
             case 1:
-                printHand(currentPlayer.getHand());
+                showHand(currentPlayer.getHand());
                 break;
             case 2:
-                trucoAcceptedOption();
+                acceptTruco();
                 break;
             case 3:
+                run();
                 break;
             case 4:
-                trucoOption();
+                trucar();
                 break;
             case 0:
                 leaveOptionsMenu = true;
-                continueGame = false;
+                endGame = true;
                 break;
             default:
                 break;
@@ -173,17 +181,17 @@ public class Game {
     public void promptOptionsFinal(int option) {
         switch (option) {
             case 1:
-                printHand(currentPlayer.getHand());
+                showHand(currentPlayer.getHand());
                 break;
             case 2:
-                acceptedOption();
+                acceptTruco();
                 break;
             case 3:
                 leaveOptionsMenu = true;
                 break;
             case 0:
                 leaveOptionsMenu = true;
-                continueGame = false;
+                endGame = true;
                 break;
             default:
                 break;
@@ -196,32 +204,28 @@ public class Game {
         }
     }
 
-    private void restartGameStats() {
-        roundPoints = 1;
-        currentPlayer = null;
-        lastTrucoPlayer = null;
-        lastThrownCard = null;
-        restartGame = false;
+    private void trucoWasAccepted() {
+        if (lastTrucoPlayer == currentPlayer) {
+            out.println("Seu truco foi aceito, escolha uma carta: ");
+            throwCard();
+        }
     }
 
-    private void trucoAcceptedOption() {
-        if(lastTrucoPlayer == currentPlayer){
-            out.println("Seu truco foi aceito, escolha uma carta: ");
-        }
+    private void acceptTruco() {
         out.println("Você aceitou o truco, escolha uma carta: ");
-
-        printSelectableCards();
-        int chosenCardIndex = scan.nextInt();
-        Card chosenCard = currentPlayer.getHand().get(chosenCardIndex);
-
-        compareCards(chosenCard);
-        restartGame = true;
+        throwCard();
+        wasTrucoAccepted = true;
         leaveOptionsMenu = true;
     }
 
-    private void trucoOption() {
-        out.println("Você trucou, escolha uma carta e espere o inimigo aceitar ou correr. ");
-        printSelectableCards();
+    private void run() {
+        out.printf("%s resolveu fugir.\n",currentPlayer);
+        out.printf("%s ganhou %d pontos.\n", lastTrucoPlayer, roundPoints);
+        endRound = true;
+    }
+
+    private void trucar() {
+        out.println("Você trucou espere o inimigo , retrucar ou correr. ");
         lastTrucoPlayer = currentPlayer;
         lastPlayer = currentPlayer;
         isTrucado = true;
@@ -237,6 +241,7 @@ public class Game {
         if (lastThrownCard != null) {
             compareCards(chosenCard);
         }
+        out.println("Você jogou " + chosenCard);
         lastPlayer = currentPlayer;
         currentPlayer.removeCard(chosenCard);
         leaveOptionsMenu = true;
@@ -244,15 +249,25 @@ public class Game {
     }
 
     private void compareCards(Card card) {
-        if (card.isStrongerThan(lastThrownCard, manilha)) {
+        if (card.isStrongerThan(lastThrownCard, vira)) {
             out.printf("Parabéns, sua carta é mais forte, você ganhou %d ponto(s).\n", roundPoints);
             currentPlayer.increaseScore(roundPoints);
         } else {
             out.printf("Sua carta é mais fraca, %s ganhou %d ponto(s).\n", lastPlayer, roundPoints);
-            if(isTrucado){
+            if (isTrucado) {
                 lastTrucoPlayer.increaseScore(roundPoints);
             }
             lastPlayer.increaseScore(roundPoints);
         }
+        endRound = true;
+    }
+
+    private void resetGameStats() {
+        roundPoints = 1;
+        currentPlayer = null;
+        lastTrucoPlayer = null;
+        lastThrownCard = null;
+        endRound = false;
+        wasTrucoAccepted = false;
     }
 }
